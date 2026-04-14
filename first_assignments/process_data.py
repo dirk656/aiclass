@@ -1,66 +1,22 @@
-import csv
+from torchtext.legacy import data 
 
-import torch 
-from torch.utils.data import DataLoader , TensorDataset
-from collections import Counter
+mytokenize = lambda x : x.split()
 
-def load_file(path):
+TEXT = data.Field(sequential = True, tokenize = mytokenize,use_vocab = True,batch_first = True, fix_length = 200)
 
-    texts , labels = [] , []
-    with open(path , 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            texts.append(row["text"])
-            labels.append(int(row["label"]))
-        
-        return texts , labels
-    
-def build_voc(texts):
-    counter = Counter(word for text in texts for word in text.split())
+LABEL = data.Field(sequential = False, use_vocab = False, pad_token = None, unk_token = None)
 
-    vocab = {"<PAD>":0 , "<UNK>":1}
+text_data_fields = [ ("label", LABEL) , ("text", TEXT)]
 
-    for word in counter:
-        vocab[word] = len(vocab)
-    
-    return vocab 
+train_data, test_data = data.TabularDataset.splits(path = "first_assignments/csvtextdata", train = "train.csv", test = "test.csv", format = "csv", skip_header = True , fields=text_data_fields)
+print(len(train_data),len(test_data))
 
+TEXT.build_vocab(train_data, max_size = 10000, vectors = None)
 
-def text_to_ids(texts ,vocab , max_len):
-    words = texts.split()
-
-    ids = [vocab.get(w,1) for w in words]
-
-    if len(ids) > max_len:
-        return ids[:max_len]
-    
-    else :
-        return ids + [0] * (max_len - len(ids))
-    
-
-def main () -> None:
-    train_texts , train_labels = load_file("csvtextdata/train.csv")
-    test_texts , test_labels = load_file("csvtextdata/test.csv")
-
-    vocab = build_voc(train_texts)
-
-    max_len = 20
-    batch_size = 2 
-
-    x_train = torch.tensor([text_to_ids(texts=t, vocab=vocab, max_len=max_len) for t in train_texts], dtype=torch.long)
-    y_train = torch.tensor(train_labels, dtype=torch.long)
-
-    x_test = torch.tensor([text_to_ids(texts=t, vocab=vocab, max_len=max_len) for t in test_texts], dtype=torch.long)
-    y_test = torch.tensor(test_labels, dtype=torch.long)
-
-    train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
-
-    test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
-
-    print({x_train.shape})
-    print({y_train.shape})
-    print({x_test.shape})
-    print({y_test.shape})
-
-if __name__ == "__main__":
-    main()
+train_iter = data.BucketIterator(train_data, batch_size = 4)
+test_iter = data.BucketIterator(test_data, batch_size = 4)  
+for step, batch in enumerate(train_iter):
+    if step > 0:
+        break
+print(batch.label)
+print(batch.text.shape)  

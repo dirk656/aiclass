@@ -60,3 +60,12 @@ pool2_out = avgpool2(imconv2dout)
 pool2_out_im = pool2_out.squeeze().detach()
 print(pool2_out_im.shape)
 
+plt.figure(figsize = (12,6))
+plt.subplot(1,2,1)
+plt.imshow(pool2_out_im[0], cmap = plt.cm.gray)
+plt.axis("off")
+plt.subplot(1,2,2)
+plt.imshow(pool2_out_im[1], cmap = plt.cm.gray)
+plt.axis("off")
+plt.show()
+
